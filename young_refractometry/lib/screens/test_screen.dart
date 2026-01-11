@@ -1729,7 +1729,37 @@ class _TestScreenState extends State<TestScreen> with SingleTickerProviderStateM
             'Which direction is the E pointing?',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          
+          // Helper text
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Say direction if sharp or slightly blurred',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade900,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
           
           Column(
             children: [
@@ -1755,7 +1785,7 @@ class _TestScreenState extends State<TestScreen> with SingleTickerProviderStateM
             child: OutlinedButton.icon(
               icon: const Icon(Icons.visibility_off, size: 20),
               label: const Text(
-                'Can\'t See Clearly',
+                'Not Clear / Can\'t See',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
               style: OutlinedButton.styleFrom(

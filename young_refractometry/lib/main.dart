@@ -9,6 +9,7 @@ import 'screens/test_screen.dart';
 import 'screens/switch_eye_screen.dart';
 import 'screens/results_screen.dart';
 import 'screens/calibration_adjustment_screen.dart'; // Add this import
+import 'screens/instruction_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,8 @@ class MainScreen extends StatelessWidget {
         switch (provider.currentScreen) {
           case 'welcome':
             return const WelcomeScreen();
+          case 'instruction':
+            return const InstructionScreen();
           case 'calibration':
             return const CalibrationScreen();
           case 'relaxation':

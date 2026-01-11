@@ -239,9 +239,9 @@ class TestConfig {
   /// Get user-friendly instruction for current test type
   static String getTestInstruction(TestType testType) {
     if (testType == TestType.distance) {
-      return '📍 Hold phone at arm\'s length (60cm)\nSimulates distance vision test';
+      return '📍 Hold phone at arm\'s length (60cm)\nFar screen vision test';
     } else {
-      return '📖 Hold phone at reading distance (40cm)\nSimulates near vision test';
+      return '📖 Hold phone at reading distance (40cm)\nNear vision test';
     }
   }
   

@@ -53,7 +53,17 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
         _startImageStream();
       }
     } catch (e) {
-       ('Camera initialization error: $e');
+       print('Camera initialization error: $e');
+       // Show error to user
+       if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(
+             content: Text('Camera error: ${e.toString()}'),
+             backgroundColor: Colors.red,
+             duration: const Duration(seconds: 5),
+           ),
+         );
+       }
     }
   }
 

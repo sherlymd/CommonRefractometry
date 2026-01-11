@@ -14,6 +14,18 @@ import '../models/health_risk_assessment.dart';
 class AdvancedRefractionService {
   
   // ======================================================================
+  // ACCURACY CONSTRAINTS
+  // ======================================================================
+  
+  /// Maximum accepted error tolerance for clinical accuracy
+  /// ±0.25 Diopter for both Sphere and Cylinder
+  static const double maxAcceptedErrorSph = 0.25;
+  static const double maxAcceptedErrorCyl = 0.25;
+  
+  /// Minimum detectable change in diopters (clinical significance threshold)
+  static const double minDiopterStep = 0.25;
+  
+  // ======================================================================
   // PUBLIC API
   // ======================================================================
 
@@ -46,17 +58,17 @@ class AdvancedRefractionService {
       finalSphere
     );
 
-    // Format results
+    // Format results with proper rounding to 0.25D steps
     return AdvancedEyeResult(
       modelResult: EyeResult(
         eye: eye,
-        sphere: _formatDiopter(finalSphere),
-        cylinder: _formatDiopter(distanceResult.cylinder),
+        sphere: _formatDiopter(_roundToDiopterStep(finalSphere)),
+        cylinder: _formatDiopter(_roundToDiopterStep(distanceResult.cylinder)),
         axis: distanceResult.axis,
         accuracy: distanceResult.accuracy.toStringAsFixed(1),
         avgBlur: distanceResult.avgBlur.toStringAsFixed(2),
       ),
-      addPower: _formatDiopter(finalAdd, isAdd: true),
+      addPower: _formatDiopter(_roundToDiopterStep(finalAdd), isAdd: true),
       healthAssessment: healthAssessment,
       isAccommodating: accommodationAnalysis.isAccommodating,
     );
@@ -115,15 +127,21 @@ class AdvancedRefractionService {
     if (operatingThreshold >= 7.0 && distAccuracy >= 90) {
       sphere = 0.00; // Emmetropia
     } else {
-      // Map threshold to diopters magnitude
+      // Map threshold to diopters magnitude (in 0.25D steps for precision)
       double magnitude = 0.0;
-      if (operatingThreshold >= 6.0) magnitude = 0.25;
-      else if (operatingThreshold >= 5.0) magnitude = 0.50;
-      else if (operatingThreshold >= 4.0) magnitude = 0.75;
-      else if (operatingThreshold >= 3.0) magnitude = 1.00;
-      else if (operatingThreshold >= 2.0) magnitude = 1.75;
-      else if (operatingThreshold >= 1.0) magnitude = 2.50;
-      else magnitude = 3.50; // Very poor
+      if (operatingThreshold >= 6.5) magnitude = 0.00; // Essentially emmetropic
+      else if (operatingThreshold >= 6.0) magnitude = 0.25;
+      else if (operatingThreshold >= 5.5) magnitude = 0.50;
+      else if (operatingThreshold >= 5.0) magnitude = 0.75;
+      else if (operatingThreshold >= 4.5) magnitude = 1.00;
+      else if (operatingThreshold >= 4.0) magnitude = 1.25;
+      else if (operatingThreshold >= 3.5) magnitude = 1.50;
+      else if (operatingThreshold >= 3.0) magnitude = 1.75;
+      else if (operatingThreshold >= 2.5) magnitude = 2.00;
+      else if (operatingThreshold >= 2.0) magnitude = 2.50;
+      else if (operatingThreshold >= 1.5) magnitude = 3.00;
+      else if (operatingThreshold >= 1.0) magnitude = 3.50;
+      else magnitude = 4.00; // Very poor (high error)
 
       // Apply sign
       sphere = isMyopicPattern ? -magnitude : magnitude;
@@ -164,12 +182,19 @@ class AdvancedRefractionService {
     double cyl = 0.0;
     int axis = 0;
 
-    if (diff >= 40) {
-      cyl = -1.50; // Significant Astigmatism
-    } else if (diff >= 25) {
+    // More granular astigmatism detection with 0.25D steps
+    if (diff >= 50) {
+      cyl = -2.00; // Very significant astigmatism
+    } else if (diff >= 40) {
+      cyl = -1.50;
+    } else if (diff >= 30) {
       cyl = -1.00;
-    } else if (diff >= 15) {
+    } else if (diff >= 20) {
+      cyl = -0.75;
+    } else if (diff >= 12) {
       cyl = -0.50;
+    } else if (diff >= 8) {
+      cyl = -0.25; // Minimal astigmatism
     }
     
     // Axis logic
@@ -395,6 +420,13 @@ class AdvancedRefractionService {
   static double _calcAcc(List<TestResponse> items) {
     if (items.isEmpty) return 0.0;
     return (items.where((i) => i.correct).length / items.length) * 100;
+  }
+
+  /// Round to nearest 0.25 diopter step for clinical accuracy
+  /// Ensures all prescriptions follow standard 0.25D increments
+  static double _roundToDiopterStep(double value) {
+    // Round to nearest 0.25
+    return (value / minDiopterStep).round() * minDiopterStep;
   }
 
   static String _formatDiopter(double val, {bool isAdd = false}) {
