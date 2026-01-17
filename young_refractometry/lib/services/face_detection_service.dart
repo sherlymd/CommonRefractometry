@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
@@ -6,11 +7,13 @@ import 'package:flutter/foundation.dart';
 import 'distance_calculation_service.dart';
 
 class FaceDetectionService {
+  // Enable landmarks for IPD-based distance calculation
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(
       enableClassification: false,
-      enableLandmarks: false,
+      enableLandmarks: true, // Required for IPD calculation
       enableTracking: false,
+      performanceMode: FaceDetectorMode.fast,
     ),
   );
 
@@ -26,22 +29,51 @@ class FaceDetectionService {
           'faceDetected': false,
           'distance': 0.0,
           'distanceValid': false,
+          'ipdPixels': 0.0,
+          'ipdCm': 0.0,
+          'eyesDetected': false,
         };
       }
 
       final face = faces.first;
-      final faceWidthPixels = 
-          (face.boundingBox.right - face.boundingBox.left).toDouble();
       
-      final distance = 
-          DistanceCalculationService.calculateDistance(faceWidthPixels);
-      final distanceValid = 
-          DistanceCalculationService.isDistanceValid(distance);
+      // Get eye landmarks for IPD calculation
+      final leftEye = face.landmarks[FaceLandmarkType.leftEye];
+      final rightEye = face.landmarks[FaceLandmarkType.rightEye];
+      
+      if (leftEye == null || rightEye == null) {
+        // Fallback: eyes not detected, cannot calculate IPD
+        return {
+          'faceDetected': true,
+          'distance': 0.0,
+          'distanceValid': false,
+          'ipdPixels': 0.0,
+          'ipdCm': 0.0,
+          'eyesDetected': false,
+        };
+      }
+      
+      // Calculate IPD (Inter-Pupillary Distance) in pixels
+      // Using Euclidean distance for accuracy even if face is slightly tilted
+      final double ipdPixels = sqrt(
+        pow(rightEye.position.x - leftEye.position.x, 2) +
+        pow(rightEye.position.y - leftEye.position.y, 2)
+      );
+      
+      // Calculate distance using IPD-based formula
+      final distance = DistanceCalculationService.calculateDistanceFromIPD(ipdPixels);
+      final distanceValid = DistanceCalculationService.isDistanceValid(distance);
+      
+      // Calculate actual IPD in cm based on known average
+      final ipdCm = DistanceCalculationService.calculateActualIPD(ipdPixels, distance);
 
       return {
         'faceDetected': true,
         'distance': distance,
         'distanceValid': distanceValid,
+        'ipdPixels': ipdPixels,
+        'ipdCm': ipdCm,
+        'eyesDetected': true,
       };
     } catch (e) {
       print('Face detection error: $e');
@@ -49,6 +81,9 @@ class FaceDetectionService {
         'faceDetected': false,
         'distance': 0.0,
         'distanceValid': false,
+        'ipdPixels': 0.0,
+        'ipdCm': 0.0,
+        'eyesDetected': false,
       };
     }
   }

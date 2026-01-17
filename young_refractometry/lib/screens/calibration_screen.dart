@@ -22,6 +22,10 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
   double _distance = 0;
   bool _distanceValid = false;
   bool _cameraInitialized = false;
+  
+  // IPD tracking
+  double _ipdCm = 0;
+  bool _eyesDetected = false;
 
   @override
   void initState() {
@@ -81,6 +85,8 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
             _faceDetected = result['faceDetected'] as bool;
             _distance = result['distance'] as double;
             _distanceValid = result['distanceValid'] as bool;
+            _ipdCm = result['ipdCm'] as double;
+            _eyesDetected = result['eyesDetected'] as bool;
           });
         }
       } catch (e) {
@@ -93,9 +99,20 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
 
   @override
   void dispose() {
+    _stopImageStream();
     _cameraController?.dispose();
     _faceDetectionService?.dispose();
     super.dispose();
+  }
+
+  Future<void> _stopImageStream() async {
+    if (_cameraController != null && _cameraController!.value.isStreamingImages) {
+      try {
+        await _cameraController!.stopImageStream();
+      } catch (e) {
+        print('[CalibrationScreen] Error stopping image stream: $e');
+      }
+    }
   }
 
   @override
@@ -148,10 +165,21 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
                             ),
                             if (_faceDetected) ...[
                               const SizedBox(height: 8),
+                              // IPD indicator
+                              StatusIndicator(
+                                status: _eyesDetected,
+                                message: DistanceCalculationService.getIPDStatus(_ipdCm, _eyesDetected),
+                                color: _eyesDetected 
+                                    ? const Color(0xFF3B82F6)  // Blue
+                                    : const Color(0xFFEF4444), // Red
+                              ),
+                              const SizedBox(height: 8),
+                              // Distance indicator
                               StatusIndicator(
                                 status: _distanceValid,
-                                message: 'Distance: ${_distance.toInt()}cm'
-                                    '${_distanceValid ? " ✓" : " (Target: 100cm ±15cm)"}',
+                                message: _eyesDetected 
+                                    ? 'Distance: ${_distance.toInt()}cm${_distanceValid ? " ✓" : " (Target: 40cm ±15cm)"}'
+                                    : 'Position eyes in view',
                                 color: DistanceCalculationService.getFeedbackColor(_distance),
                               ),
                             ],

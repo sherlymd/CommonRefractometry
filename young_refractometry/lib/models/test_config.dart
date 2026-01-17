@@ -25,6 +25,11 @@ class TestConfig {
   static const double avgFaceWidthCm = 14.0;
   static const double focalLength = 500.0;
   
+  // IPD (Inter-Pupillary Distance) for distance calculation
+  // Average adult IPD is approximately 6.3cm (63mm)
+  // Range: 5.4cm - 7.5cm for most adults
+  static const double avgIPDCm = 6.3;
+  
   
   // ═══════════════════════════════════════════════════════════
   // DISTANCE VISION TESTING (Simulates 6 meters / 20 feet)
